@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Rocket : MonoBehaviour
 {
@@ -6,6 +7,12 @@ public class Rocket : MonoBehaviour
     AudioSource audioSource;
     [SerializeField] float rcsThrust = 100f;
     [SerializeField] float mainThrust = 100f;
+    private int scene = 0;
+
+    // game states
+    enum State { Alive, Dying, Transcending }
+    State playerState = State.Alive;
+
 
     // Start is called before the first frame update
     void Start()
@@ -17,24 +24,49 @@ public class Rocket : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Thrust();
-        Rotate();
+        if (playerState == State.Alive) // todo somewhere stop sound on death
+        {
+            Thrust();
+            Rotate();
+        }
+        else
+        {
+            PauseAudio();
+        }
     }
 
     void OnCollisionEnter(Collision collision)
     {
+        if (playerState != State.Alive)
+        {
+            return;
+        }
+
         switch (collision.gameObject.tag)
         {
             case "Friendly":
-                print("OK"); // todo remove
+                // do nothing
                 break;
-            case "Fuel":
-                print("Fuel"); // todo remove
+            case "Finish":
+                playerState = State.Transcending;
+                Invoke("LoadNextLevel", 1f); // parameterize time
                 break;
             default:
-                print("Dead"); // todo remove
+                playerState = State.Dying; // parameterize time
+                Invoke("LoadFirstLevel", 2f);
                 break;
         }
+    }
+
+    private void LoadFirstLevel()
+    {
+        SceneManager.LoadScene(0);
+    }
+
+    private void LoadNextLevel()
+    {
+        scene++;
+        SceneManager.LoadScene(scene);
     }
 
     void Rotate()
@@ -69,7 +101,12 @@ public class Rocket : MonoBehaviour
         }
         else
         {
-            audioSource.Pause();
+            PauseAudio();
         }
+    }
+
+    private void PauseAudio()
+    {
+        audioSource.Pause();
     }
 }
